@@ -105,7 +105,7 @@ class Simulation():
                 Row = random.randint(1, self._NumberOfRows)
                 Column = random.randint(1, self._NumberOfColumns)
                 for N in self._Nests:
-                    if N.GetRow() == Row and N.GetColumn() == Column:
+                    if N.GetRow() == Row and N.GetColumn() == Column or self._Grid[self.__GetIndex(Row, Column)].GetAmountOfFood() > 0:
                         Allowed = False
             self.AddFoodToCell(Row, Column,500)
 

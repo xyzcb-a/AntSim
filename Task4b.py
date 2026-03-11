@@ -8,7 +8,8 @@ import random
 
 def Main():
     SimulationParameters = []
-    SimNo = input("Enter simulation number: ")
+    DisplaySimulationChoicesMenu()
+    SimNo = GetSimChoice()
     if SimNo == "1":
         SimulationParameters = [1, 5, 5, 500, 3, 5, 1000, 50]
     elif SimNo == "2":
@@ -60,6 +61,37 @@ def DisplayMenu():
 def GetChoice():
     Choice = input()
     return Choice
+
+def DisplaySimulationChoicesMenu(): 
+    print()
+    print("Select simulation to run")
+    print("1. Simulation 1: \tGrid: 5x5 \n\t\t\tNest: 1(with 500 food units)\n\t\t\tAnts: 5 (1 queen, 4 workers)\n\t\t\tFood Sources: 3\n\t\t\tPheromone Strength: 1000\n\t\t\tPheromone Decay Rate: 50 per stage\n")
+    print("2. Simulation 2: \tGrid: 5x5 \n\t\t\tNest: 1(with 500 food units)\n\t\t\tAnts: 5 (1 queen, 4 workers)\n\t\t\tFood Sources: 3\n\t\t\tPheromone Strength: 1000\n\t\t\tPheromone Decay Rate: 100 per stage\n")
+    print("3. Simulation 3: \tGrid: 10x10 \n\t\t\tNest: 1(with 500 food units)\n\t\t\tAnts: 9 (1 queen, 8 workers)\n\t\t\tFood Sources: 3\n\t\t\tPheromone Strength: 1000\n\t\t\tPheromone Decay Rate: 25 per stage\n")
+    print("4. Simulation 4: \tGrid: 5x5 \n\t\t\tNest: 2(with 500 food units each)\n\t\t\tAnts: 6 per nest (1 queen, 5 workers)\n\t\t\tFood Sources: 3\n\t\t\tPheromone Strength: 1000\n\t\t\tPheromone Decay Rate: 25 per stage\n")
+    print()
+    print("> ", end='')
+
+
+
+def GetSimChoice():
+    ValidChoice = False 
+    while ValidChoice == False: 
+        Choice = input("Enter simulation number ")
+        try: 
+            IntChoice = int(Choice)
+            if (IntChoice >= 1 and IntChoice <= 5) or IntChoice == 9:
+                ValidChoice == True 
+                return Choice 
+            else: 
+                print("That is not a valid menu choice, please try again")
+                DisplaySimulationChoicesMenu()
+                Choice = ""
+        except ValueError: 
+            print("That is not a valid integer")
+            DisplaySimulationChoicesMenu()
+            Choice = ""
+
 
 def GetCellReference():
     print()

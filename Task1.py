@@ -44,6 +44,13 @@ def Main():
             NumberOfStages = int(input("Enter number of stages to advance by: "))
             ThisSimulation.AdvanceStage(NumberOfStages)
             print(f"Simulation moved on {NumberOfStages} stages" + "\n")
+        elif Choice == "9":
+            Check = input("Are you sure you want to quit Y/N").lower 
+            if Check == "y" or Check == "yes":
+                Choice = ""
+                break 
+            else:
+                Choice = ""
     input()
 
 def DisplayMenu():

@@ -58,8 +58,20 @@ def DisplayMenu():
     print("> ", end='')
 
 def GetChoice():
-    Choice = input()
-    return Choice
+    ValidChoice = False 
+    while ValidChoice == False: 
+        Choice = input()
+        try: 
+            IntChoice = int(Choice)
+            if (IntChoice >= 1 and IntChoice <= 5) or IntChoice == 9:
+                ValidChoice == True 
+                return Choice 
+            else: 
+                print("That is not a valid menu choice, please try again")
+                Choice = ""
+        except ValueError: 
+            print("That is not a valid integer")
+            Choice = ""
 
 def GetCellReference():
     print()
