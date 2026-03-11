@@ -1,12 +1,13 @@
 #Skeleton Program code for the AQA A Level Paper 1 Summer 2026 examination
 #this code should be used in conjunction with the Preliminary Material
 #written by the AQA Programmer Team
+#Modified by the ZigZag Programmer Team
 #developed in the Python 3.9 programming environment
 #Version 2
 
 import random
 
-def Main():
+def Main():         #Q1
     SimulationParameters = []
     SimNo = input("Enter simulation number: ")
     if SimNo == "1":
@@ -44,13 +45,16 @@ def Main():
             NumberOfStages = int(input("Enter number of stages to advance by: "))
             ThisSimulation.AdvanceStage(NumberOfStages)
             print(f"Simulation moved on {NumberOfStages} stages" + "\n")
+        #CHANGE
         elif Choice == "9":
-            Check = input("Are you sure you want to quit Y/N").lower 
-            if Check == "y" or Check == "yes":
-                Choice = ""
-                break 
+            Confirm = input("Are you sure you want to quit the simulation? yes / no: ").lower()
+            if Confirm == "yes" or Confirm == "y":
+                break
             else:
                 Choice = ""
+                continue
+    print("Simulation Complete, press any key to close")
+    #END CHANGE
     input()
 
 def DisplayMenu():
@@ -127,10 +131,6 @@ class Simulation():
 
     def __GetIndex(self, Row, Column):
         return (Row - 1) * self._NumberOfColumns + Column - 1
-
-    def __GetRC(self,Index):
-        row = self.__NumberOfColumns -1 
-        column = Index - row 
 
     def __GetIndicesOfNeighbours(self, Row, Column):
         ListOfNeighbours = []
@@ -416,7 +416,6 @@ class WorkerAnt(Ant):
             self._Row, self._Column = self._ChangeCell(IndexToUse, self._Row, self._Column)
 
 class Nest(Entity):
-
     _NextNestID = 1
 
     def __init__(self, StartRow, StartColumn, StartFood):
