@@ -29,14 +29,14 @@ def Main():
             StartColumn = 0
             EndRow = 0
             EndColumn = 0
-            StartRow, StartColumn = GetCellReference(StartRow, StartColumn, SimulationParameters)
-            EndRow, EndColumn = GetCellReference(EndRow, EndColumn, SimulationParameters)
+            StartRow, StartColumn = GetCellReference()
+            EndRow, EndColumn = GetCellReference()
             print(ThisSimulation.GetAreaDetails(StartRow, StartColumn, EndRow, EndColumn))
         elif Choice == "3":
             Row = 0
             Column = 0
-            Row, Column = GetCellReference(Row, Column, SimulationParameters)
-            print(ThisSimulation.GetCellDetails(Row, Column,))
+            Row, Column = GetCellReference()
+            print(ThisSimulation.GetCellDetails(Row, Column))
         elif Choice == "4":
             ThisSimulation.AdvanceStage(1)
             print("Simulation moved on one stage\n")
@@ -44,6 +44,9 @@ def Main():
             NumberOfStages = int(input("Enter number of stages to advance by: "))
             ThisSimulation.AdvanceStage(NumberOfStages)
             print(f"Simulation moved on {NumberOfStages} stages" + "\n")
+        if ThisSimulation.HasSimulationEnded():
+            print(f"The simulation has ended because: {ThisSimulation.GetEndReason()}")
+            break
     input()
 
 def DisplayMenu():
@@ -61,41 +64,12 @@ def GetChoice():
     Choice = input()
     return Choice
 
-def GetCellReference(Rows, Columns, Parameters):
-    ValidRow, ValidColumn = False, False
-    while not ValidRow:
-        print()
-        Row = (input("Enter row number: "))
-        print()
-        try:
-            Row = int(Row)
-            if Row <= (Parameters[1]) and Row >= 1:
-                ValidRow = True 
-            else: 
-                print(f"That is not a valid width. It must be between 1 and {Parameters[1]}. Please try again.")
-                print()
-                continue
-        except ValueError:
-            print("That is not a valid integer. Please try again.")
-            print()
-            continue    
-    while not ValidColumn:
-        print()
-        Columns = (input("Enter column number: "))
-        print()
-        try:
-            Columns = int(Columns)
-            if Columns <= (Parameters[2]) and Columns >= 1:
-                ValidColumn = True 
-            else: 
-                print(f"That is not a valid height. It must be between 1 and {Parameters[2]}. Please try again.")
-                print()
-                continue
-        except ValueError:
-            print("That is not a valid integer. Please try again.")
-            print()
-            continue        
-    return Rows, Columns
+def GetCellReference():
+    print()
+    Row = int(input("Enter row number: "))
+    Column = int(input("Enter column number: "))
+    print()
+    return Row, Column
 
 class Simulation():
     def __init__(self, SimulationParameters):
@@ -107,6 +81,8 @@ class Simulation():
         self._StartingAntsInNest = SimulationParameters[5]
         self._NewPheromoneStrength = SimulationParameters[6]
         self._PheromoneDecay = SimulationParameters[7]
+        self._SimulationEnded = False
+        self._EndReason = ""
         self._Nests = []
         self._Ants = []
         self._Pheromones = []
@@ -275,6 +251,8 @@ class Simulation():
                     Details += f"Ant {P.GetBelongsTo()} with strength of {P.GetStrength()}" + "\n\n"
             Details += "\n\n"
         return Details
+    
+ 
 
     def AdvanceStage(self, NumberOfStages):
         for Count in range(1, NumberOfStages + 1):
@@ -301,8 +279,28 @@ class Simulation():
                     if A.GetFoodCarried() > 0:
                         self.UpdateAntsPheromoneInCell(A)
                     A.ChooseCellToMoveTo(self.__GetIndicesOfNeighbours(A.GetRow(), A.GetColumn()), self.__GetIndexOfNeighbourWithStrongestPheromone(A.GetRow(), A.GetColumn()))
+            if len(self._Ants) == 0:
+                self._SimulationEnded = True
+                self._EndReason = "All ants have perished."
+                break
+            FoodAvailable = False
+            for C in self._Grid:
+                if C.GetAmountOfFood() > 0:
+                    FoodAvailable = True
+                    break
+            if not FoodAvailable:
+                self._SimulationEnded = True
+                self._EndReason = "All food has been collected."
+                break
             for N in self._Nests:
-                self._Nests, self._Ants, self._Pheromones = N.AdvanceStage(self._Nests, self._Ants, self._Pheromones)
+                  self._Nests, self._Ants, self._Pheromones = N.AdvanceStage(self._Nests, self._Ants, self._Pheromones)
+    
+    def HasSimulationEnded(self):
+        return self._SimulationEnded
+    
+    def GetEndReason(self):
+        return self._EndReason
+
 
 class Entity():
     def __init__(self, StartRow, StartColumn):

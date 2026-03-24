@@ -29,14 +29,14 @@ def Main():
             StartColumn = 0
             EndRow = 0
             EndColumn = 0
-            StartRow, StartColumn = GetCellReference(StartRow, StartColumn, SimulationParameters)
-            EndRow, EndColumn = GetCellReference(EndRow, EndColumn, SimulationParameters)
+            StartRow, StartColumn = GetCellReference()
+            EndRow, EndColumn = GetCellReference()
             print(ThisSimulation.GetAreaDetails(StartRow, StartColumn, EndRow, EndColumn))
         elif Choice == "3":
             Row = 0
             Column = 0
-            Row, Column = GetCellReference(Row, Column, SimulationParameters)
-            print(ThisSimulation.GetCellDetails(Row, Column,))
+            Row, Column = GetCellReference()
+            print(ThisSimulation.GetCellDetails(Row, Column))
         elif Choice == "4":
             ThisSimulation.AdvanceStage(1)
             print("Simulation moved on one stage\n")
@@ -61,41 +61,12 @@ def GetChoice():
     Choice = input()
     return Choice
 
-def GetCellReference(Rows, Columns, Parameters):
-    ValidRow, ValidColumn = False, False
-    while not ValidRow:
-        print()
-        Row = (input("Enter row number: "))
-        print()
-        try:
-            Row = int(Row)
-            if Row <= (Parameters[1]) and Row >= 1:
-                ValidRow = True 
-            else: 
-                print(f"That is not a valid width. It must be between 1 and {Parameters[1]}. Please try again.")
-                print()
-                continue
-        except ValueError:
-            print("That is not a valid integer. Please try again.")
-            print()
-            continue    
-    while not ValidColumn:
-        print()
-        Columns = (input("Enter column number: "))
-        print()
-        try:
-            Columns = int(Columns)
-            if Columns <= (Parameters[2]) and Columns >= 1:
-                ValidColumn = True 
-            else: 
-                print(f"That is not a valid height. It must be between 1 and {Parameters[2]}. Please try again.")
-                print()
-                continue
-        except ValueError:
-            print("That is not a valid integer. Please try again.")
-            print()
-            continue        
-    return Rows, Columns
+def GetCellReference():
+    print()
+    Row = int(input("Enter row number: "))
+    Column = int(input("Enter column number: "))
+    print()
+    return Row, Column
 
 class Simulation():
     def __init__(self, SimulationParameters):
@@ -436,6 +407,11 @@ class WorkerAnt(Ant):
         else:
             IndexToUse = ListOfNeighbours.index(IndexOfNeighbourWithStrongestPheromone)
             self._Row, self._Column = self._ChangeCell(IndexToUse, self._Row, self._Column)
+class FlyingAnt(Ant):
+    def __init__(self, StartRow, StartColumn, NestInRow, NestInColumn):
+        super().__init__(StartRow, StartColumn, NestInRow, NestInColumn)
+        self._TypeOfAnt = "Flying"
+
 
 class Nest(Entity):
 
