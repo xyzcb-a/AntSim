@@ -17,7 +17,9 @@ def Main():
         SimulationParameters = [1, 10, 10, 500, 3, 9, 1000, 25]
     elif SimNo == "4":
         SimulationParameters = [2, 10, 10, 500, 3, 6, 1000, 25]
-    ThisSimulation = Simulation(SimulationParameters)
+    elif SimNo == "5":
+        SimulationParameters = [1, 10, 10, 500, 4, 5, 1000, 25]
+    ThisSimulation = Simulation(SimulationParameters, SimNo)
     Choice = ""
     while Choice != "9":
         DisplayMenu()
@@ -69,7 +71,7 @@ def GetCellReference():
     return Row, Column
 
 class Simulation():
-    def __init__(self, SimulationParameters):
+    def __init__(self, SimulationParameters, SimNo= "1"):
         self._StartingNumberOfNests = SimulationParameters[0]
         self._NumberOfRows = SimulationParameters[1]
         self._NumberOfColumns = SimulationParameters[2]
@@ -87,6 +89,14 @@ class Simulation():
         for Row in range(1, self._NumberOfRows + 1):
             for Column in range(1, self._NumberOfColumns + 1):
                 self._Grid.append(Cell(Row, Column))
+
+        if SimNo == "5":
+            RiverColumn = 5
+            for Row in range(1, self._NumberOfRows + 1):
+                self._Grid[self.__GetIndex(Row, RiverColumn)].MakeWater()
+            print(f"River created along column {RiverColumn}")
+
+
         self.SetUpANestAt(2, 4)
         for Count in range(2, self._StartingNumberOfNests + 1):
             Allowed = False
@@ -97,6 +107,8 @@ class Simulation():
                 for N in self._Nests:
                     if N.GetRow() == Row and N.GetColumn() == Column:
                         Allowed = False
+                if self._Grid[self.__GetIndex(Row, Column)].IsWater():
+                    Allowed = False
             self.SetUpANestAt(Row, Column)
         for Count in range(1, self._StartingNumberOfFoodCells + 1):
             Allowed = False
@@ -107,20 +119,16 @@ class Simulation():
                 for N in self._Nests:
                     if N.GetRow() == Row and N.GetColumn() == Column:
                         Allowed = False
-            self.AddFoodToCell(Row, Column,500)
+                if self._Grid[self.__GetIndex(Row, Column)].IsWater():
+                        Allowed = False
+            self.AddFoodToCell(Row, Column, 500)
+            
 
     def SetUpANestAt(self, Row, Column):
-        #CHANGE
-        for i in range(len(self._Ants)-1, -1, -1):
-            if self._Ants[i].GetTypeOfAnt() == "flying" and self._Ants[i].GetRow() == Row and self._Ants[i].GetColumn() == Column:
-                self._Ants.pop(i)
-                break
-        self._Nests.append(Nest(Row, Column, self._StartingFoodInNest,self._NumberOfRows,self._NumberOfColumns))
-        #END CHANGE
+        self._Nests.append(Nest(Row, Column, self._StartingFoodInNest))
         self._Ants.append(QueenAnt(Row, Column, Row, Column))
         for Worker in range(2, self._StartingAntsInNest + 1):
             self._Ants.append(WorkerAnt(Row, Column, Row, Column))
-
 
     def AddFoodToCell(self, Row, Column, Quantity):
         self._Grid[self.__GetIndex(Row, Column)].UpdateFoodInCell(Quantity)
@@ -139,7 +147,12 @@ class Simulation():
                 NeighbourRow = Row + RowDirection
                 NeighbourColumn = Column + ColumnDirection
                 if (RowDirection != 0 or ColumnDirection != 0) and NeighbourRow >= 1 and NeighbourRow <= self._NumberOfRows and NeighbourColumn >= 1 and NeighbourColumn <= self._NumberOfColumns:
-                    ListOfNeighbours.append(self.__GetIndex(NeighbourRow, NeighbourColumn))
+                    NeighbourIndex = self.__GetIndex(NeighbourRow, NeighbourColumn)
+                    # MODIFIED: treat water as impassable (-1)
+                    if self._Grid[NeighbourIndex].IsWater():
+                        ListOfNeighbours.append(-1)
+                    else:
+                        ListOfNeighbours.append(NeighbourIndex)
                 else:
                     ListOfNeighbours.append(-1)
         return ListOfNeighbours
@@ -194,8 +207,11 @@ class Simulation():
             for Column in range(1, self._NumberOfColumns + 1):
                 Details += f"{Row}, {Column}: "
                 TempCell = self._Grid[self.__GetIndex(Row, Column)]
-                if self.GetNestInCell(TempCell) is not None:
-                    Details += "| Nest |  "
+                if TempCell.IsWater():                          # MODIFIED
+                    Details += "| ~~RIVER~~ |  "
+                else:
+                    if self.GetNestInCell(TempCell) is not None:
+                        Details += "| Nest |  "
                 NumberOfAnts = self.GetNumberOfAntsInCell(TempCell)
                 if NumberOfAnts > 0:
                     Details += f"| Ants: {NumberOfAnts} |  "
@@ -310,12 +326,22 @@ class Cell(Entity):
     def __init__(self, StartRow, StartColumn):
         super().__init__(StartRow, StartColumn)
         self._AmountOfFood = 0
+        self._IsWater = False 
 
     def GetAmountOfFood(self):
         return self._AmountOfFood
+    
+    def IsWater(self):                 
+        return self._IsWater
+
+    def MakeWater(self):               
+        self._IsWater = True
 
     def GetDetails(self):
-        Details = f"{super().GetDetails()}{self._AmountOfFood} food present" + "\n\n"
+        if self._IsWater:              # MODIFIED: river display
+            Details = f"{super().GetDetails()}~~~ RIVER - impassable ~~~" + "\n\n"
+        else:
+            Details = f"{super().GetDetails()}{self._AmountOfFood} food present" + "\n\n"
         return Details
 
     def UpdateFoodInCell(self, Change):
@@ -415,52 +441,17 @@ class WorkerAnt(Ant):
             IndexToUse = ListOfNeighbours.index(IndexOfNeighbourWithStrongestPheromone)
             self._Row, self._Column = self._ChangeCell(IndexToUse, self._Row, self._Column)
 
-class FlyingAnt(Ant):
-    def __init__(self, StartRow, StartColumn, NestInRow, NestInColumn, SimWidth, SimHeight ):
-        super().__init__(StartRow, StartColumn, NestInRow, NestInColumn)
-        self._TypeOfAnt = "Flying"
-        self._FoodCapacity = 5 
-        self._HasFlown = False
-        self._SimulationHeight = SimWidth
-        self._SimulationWidth = SimHeight 
-
-    def AdvanceStage(self, Nests):
-        self._Stages += 1
-        if self._Stages == 3:
-            ValidNewLocation = False
-            while not ValidNewLocation:
-                ValidNewLocation = True
-                RNoRow = random.randint(1, self.__SimulationHeight - 1)
-                RNoColumn = random.randint(1, self.__SimulationWidth - 1)
-                for N in Nests:
-                    if N.GetRow() == RNoRow and N.GetColumn() == RNoColumn:
-                        ValidNewLocation = False
-            self._Row = RNoRow
-            self._Column = RNoColumn
-            self.__HasFlown = True
-            print("Flying Ant has flown the nest!")
-
-    def IsAtOwnNest(self):
-        if self.__HasFlown:
-            return False
-        return self._Row == self._NestRow and self._Column == self._NestColumn
-
 class Nest(Entity):
 
     _NextNestID = 1
 
-    def __init__(self, StartRow, StartColumn, StartFood, SimulationWidth, SimulationHeight):
+    def __init__(self, StartRow, StartColumn, StartFood):
         super().__init__(StartRow, StartColumn)
         self._FoodLevel = StartFood
         self._NumberOfQueens = 1
         self._ID = Nest._NextNestID
         Nest._NextNestID += 1
-        self._SimulationWidth = SimulationWidth
-        self._SimulationHeight = SimulationHeight
 
-    def GetDetails(self):
-        return "Is Nest"
-    
     def ChangeFood(self, Change):
         self._FoodLevel += Change
         if self._FoodLevel < 0:

@@ -110,17 +110,10 @@ class Simulation():
             self.AddFoodToCell(Row, Column,500)
 
     def SetUpANestAt(self, Row, Column):
-        #CHANGE
-        for i in range(len(self._Ants)-1, -1, -1):
-            if self._Ants[i].GetTypeOfAnt() == "flying" and self._Ants[i].GetRow() == Row and self._Ants[i].GetColumn() == Column:
-                self._Ants.pop(i)
-                break
-        self._Nests.append(Nest(Row, Column, self._StartingFoodInNest,self._NumberOfRows,self._NumberOfColumns))
-        #END CHANGE
+        self._Nests.append(Nest(Row, Column, self._StartingFoodInNest))
         self._Ants.append(QueenAnt(Row, Column, Row, Column))
         for Worker in range(2, self._StartingAntsInNest + 1):
             self._Ants.append(WorkerAnt(Row, Column, Row, Column))
-
 
     def AddFoodToCell(self, Row, Column, Quantity):
         self._Grid[self.__GetIndex(Row, Column)].UpdateFoodInCell(Quantity)
@@ -279,6 +272,15 @@ class Simulation():
                     if A.GetFoodCarried() > 0:
                         self.UpdateAntsPheromoneInCell(A)
                     A.ChooseCellToMoveTo(self.__GetIndicesOfNeighbours(A.GetRow(), A.GetColumn()), self.__GetIndexOfNeighbourWithStrongestPheromone(A.GetRow(), A.GetColumn()))
+            FoundingQueensToRemove = []
+            for A in self._Ants:
+                if A.GetTypeOfAnt() == "queen" and A.IsFounding():
+                    CurrentCell = self._Grid[self.__GetIndex(A.GetRow(), A.GetColumn())]
+                    if self.GetNestInCell(CurrentCell) is None:
+                        self.SetUpANestAt(A.GetRow(), A.GetColumn())
+                        FoundingQueensToRemove.append(A)
+            for A in FoundingQueensToRemove:
+                self._Ants.remove(A)
             for N in self._Nests:
                 self._Nests, self._Ants, self._Pheromones = N.AdvanceStage(self._Nests, self._Ants, self._Pheromones)
 
@@ -388,6 +390,18 @@ class QueenAnt(Ant):
     def __init__(self, StartRow, StartColumn, NestInRow, NestInColumn):
         super().__init__(StartRow, StartColumn, NestInRow, NestInColumn)
         self._TypeOfAnt = "queen"
+        self._IsFounding = False 
+
+    def IsFounding(self):
+            return self._IsFounding 
+
+    def SetFounding(self):
+            self._IsFounding = True 
+        
+    def ChooseCellToMoveTo(self, ListOfNeighbours, IndexOfNeighbourWithStrongestPheromone):
+            if self._IsFounding:
+                IndexToUse = self._ChooseRandomNeighbour(ListOfNeighbours)
+                self._Row, self._Column = self._ChangeCell(IndexToUse, self._Row, self._Column)
 
 class WorkerAnt(Ant):
     def __init__(self, StartRow, StartColumn, NestInRow, NestInColumn):
@@ -415,52 +429,17 @@ class WorkerAnt(Ant):
             IndexToUse = ListOfNeighbours.index(IndexOfNeighbourWithStrongestPheromone)
             self._Row, self._Column = self._ChangeCell(IndexToUse, self._Row, self._Column)
 
-class FlyingAnt(Ant):
-    def __init__(self, StartRow, StartColumn, NestInRow, NestInColumn, SimWidth, SimHeight ):
-        super().__init__(StartRow, StartColumn, NestInRow, NestInColumn)
-        self._TypeOfAnt = "Flying"
-        self._FoodCapacity = 5 
-        self._HasFlown = False
-        self._SimulationHeight = SimWidth
-        self._SimulationWidth = SimHeight 
-
-    def AdvanceStage(self, Nests):
-        self._Stages += 1
-        if self._Stages == 3:
-            ValidNewLocation = False
-            while not ValidNewLocation:
-                ValidNewLocation = True
-                RNoRow = random.randint(1, self.__SimulationHeight - 1)
-                RNoColumn = random.randint(1, self.__SimulationWidth - 1)
-                for N in Nests:
-                    if N.GetRow() == RNoRow and N.GetColumn() == RNoColumn:
-                        ValidNewLocation = False
-            self._Row = RNoRow
-            self._Column = RNoColumn
-            self.__HasFlown = True
-            print("Flying Ant has flown the nest!")
-
-    def IsAtOwnNest(self):
-        if self.__HasFlown:
-            return False
-        return self._Row == self._NestRow and self._Column == self._NestColumn
-
 class Nest(Entity):
 
     _NextNestID = 1
 
-    def __init__(self, StartRow, StartColumn, StartFood, SimulationWidth, SimulationHeight):
+    def __init__(self, StartRow, StartColumn, StartFood):
         super().__init__(StartRow, StartColumn)
         self._FoodLevel = StartFood
         self._NumberOfQueens = 1
         self._ID = Nest._NextNestID
         Nest._NextNestID += 1
-        self._SimulationWidth = SimulationWidth
-        self._SimulationHeight = SimulationHeight
 
-    def GetDetails(self):
-        return "Is Nest"
-    
     def ChangeFood(self, Change):
         self._FoodLevel += Change
         if self._FoodLevel < 0:
@@ -504,8 +483,9 @@ class Nest(Entity):
                 if RNo1 < 50:
                     RNo2 = random.randint(0, 99)
                     if RNo2 < 2:
-                        Ants.append(QueenAnt(self._Row, self._Column, self._Row, self._Column))
-                        self._NumberOfQueens += 1
+                        NewQueen = QueenAnt(self._Row, self._Column, self._Row, self._Column)
+                        NewQueen.SetFounding()
+                        Ants.append(NewQueen)
                     else:
                         Ants.append(WorkerAnt(self._Row, self._Column, self._Row, self._Column))
         return Nests, Ants, Pheromones
